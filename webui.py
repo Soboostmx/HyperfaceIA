@@ -1,37 +1,9 @@
-import gradio as gr
-import random
-import os
-import json
-import time
-import zipfile
-import tempfile
-import shutil
-from datetime import datetime
-import shared
-import modules.config
-import fooocus_version
-import modules.html
-import modules.async_worker as worker
-import modules.constants as constants
-import modules.flags as flags
-import modules.gradio_hijack as grh
-import modules.style_sorter as style_sorter
-import modules.meta_parser
-import args_manager
-import copy
-import launch
-from extras.inpaint_mask import SAMOptions
+/* ===== FOOOCUS UI MEJORADO - STYLE.CSS ===== */
+/* Basado en Fooocus original con mejoras modernas en español */
 
-from modules.sdxl_styles import legal_style_names
-from modules.private_logger import get_current_html_path
-from modules.ui_gradio_extensions import reload_javascript
-from modules.auth import auth_enabled, check_auth
-from modules.util import is_json
-
-# CSS personalizado para mejorar la interfaz
-custom_css = """
-/* Esquema de colores moderno */
+/* ===== VARIABLES CSS MODERNAS ===== */
 :root {
+    /* Colores principales */
     --primary-color: #667eea;
     --primary-dark: #5a6fd8;
     --secondary-color: #764ba2;
@@ -39,50 +11,388 @@ custom_css = """
     --success-color: #4ade80;
     --warning-color: #fbbf24;
     --error-color: #f87171;
+    --info-color: #3b82f6;
+    
+    /* Backgrounds */
     --background: #0f0f23;
     --surface: #1a1a2e;
     --surface-light: #16213e;
+    --surface-dark: #0d1117;
+    
+    /* Texto */
     --text-primary: #ffffff;
     --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    /* Bordes */
     --border: #334155;
     --border-light: #475569;
+    --border-accent: var(--primary-color);
+    
+    /* Sombras */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.5);
+    
+    /* Gradientes */
+    --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    --gradient-accent: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    --gradient-success: linear-gradient(135deg, var(--success-color), #22c55e);
+    --gradient-surface: linear-gradient(135deg, var(--surface), var(--surface-light));
+    
+    /* Transiciones */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    
+    /* Espaciado */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Radios de borde */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 50%;
+    
+    /* Compatibilidad con Gradio */
+    --background-fill-primary: var(--surface);
+    --background-fill-secondary: var(--surface-light);
+    --border-color-primary: var(--border);
+    --border-color-accent: var(--primary-color);
+    --color-accent: var(--primary-color);
+    --color-accent-soft: var(--primary-color);
 }
 
-/* Gradientes para elementos principales */
-.gradient-bg {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-}
-
-.gradient-border {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    padding: 2px;
-    border-radius: 12px;
-}
-
-/* Estilos generales */
+/* ===== ESTILOS GENERALES MEJORADOS ===== */
 body {
-    background: var(--background);
-    color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--background) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* Contenedor principal mejorado */
+* {
+    box-sizing: border-box;
+}
+
+/* ===== ESTILOS ORIGINALES DE FOOOCUS PRESERVADOS Y MEJORADOS ===== */
+
+/* Loader mejorado */
+.loader-container {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    background: var(--surface-light);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+}
+
+.loader {
+    border: 4px solid var(--border);
+    border-top: 4px solid var(--primary-color);
+    border-radius: var(--radius-full);
+    width: 24px;
+    height: 24px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loader-container > span {
+    margin-left: var(--spacing-md);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Barra de progreso moderna */
+progress {
+    appearance: none;
+    height: 24px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    width: 100%;
+    vertical-align: middle !important;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+}
+
+progress::-webkit-progress-value {
+    background: var(--gradient-accent);
+    border-radius: var(--radius-lg);
+    position: relative;
+}
+
+progress::-webkit-progress-value::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+progress::-moz-progress-bar {
+    background: var(--gradient-accent);
+    border-radius: var(--radius-lg);
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-container {
+    margin-left: var(--spacing-lg);
+    margin-right: var(--spacing-lg);
+    flex-grow: 1;
+    background: var(--surface-light);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+}
+
+.progress-bar {
+    height: 35px !important;
+    background: var(--surface-light);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    padding: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar > .generating {
+    display: none !important;
+}
+
+.progress-bar span {
+    text-align: right;
+    width: 215px;
+    color: var(--text-primary);
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+}
+
+/* ===== PROMPT PRINCIPAL MEJORADO ===== */
+div:has(> #positive_prompt) {
+    border: none;
+}
+
+#positive_prompt {
+    padding: var(--spacing-md) !important;
+    background: var(--surface) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    color: var(--text-primary) !important;
+    font-size: 1rem !important;
+    font-family: inherit !important;
+    transition: all var(--transition-normal) !important;
+    resize: vertical;
+    min-height: 100px;
+}
+
+#positive_prompt:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    background: var(--surface-light) !important;
+}
+
+#positive_prompt::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7;
+}
+
+/* ===== BOTONES MODERNOS ===== */
+
+/* Botones principales */
+.btn-primary,
+button[variant="primary"],
+.type_row {
+    background: var(--gradient-primary) !important;
+    border: none !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--spacing-md) var(--spacing-xl) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    transition: all var(--transition-normal) !important;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.type_row {
+    height: 90px !important;
+}
+
+.type_row_half {
+    height: 45px !important;
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+}
+
+.btn-primary:hover,
+button[variant="primary"]:hover,
+.type_row:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6) !important;
+}
+
+.btn-primary:active,
+button[variant="primary"]:active,
+.type_row:active {
+    transform: translateY(0) !important;
+}
+
+/* Efecto de brillo en botones principales */
+.btn-primary::before,
+.type_row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover::before,
+.type_row:hover::before {
+    left: 100%;
+}
+
+/* Botón de descarga especial */
+.btn-download {
+    background: var(--gradient-success) !important;
+    border: none !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all var(--transition-normal) !important;
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm) !important;
+    min-height: 48px;
+}
+
+.btn-download:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(74, 222, 128, 0.6) !important;
+}
+
+/* Botones secundarios */
+.btn-secondary,
+button[variant="secondary"] {
+    background: var(--surface-light) !important;
+    border: 2px solid var(--border-light) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--spacing-sm) var(--spacing-lg) !important;
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all var(--transition-normal) !important;
+    min-height: 40px;
+}
+
+.btn-secondary:hover,
+button[variant="secondary"]:hover {
+    border-color: var(--primary-color) !important;
+    background: rgba(102, 126, 234, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+/* Botón de refresh mejorado */
+.refresh_button {
+    border: none !important;
+    background: var(--surface-light) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+    font-size: 1.2rem !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: all var(--transition-normal) !important;
+    cursor: pointer;
+}
+
+.refresh_button:hover {
+    background: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* ===== SECCIONES Y CONTENEDORES ===== */
+
+/* Contenedores principales */
 .main-container {
     background: var(--surface);
     border-radius: 20px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-xl);
     border: 1px solid var(--border);
-    margin: 20px;
+    margin: var(--spacing-lg);
     overflow: hidden;
 }
 
-/* Header mejorado */
+.control-section {
+    background: var(--surface-light);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    border: 1px solid var(--border);
+    transition: all var(--transition-normal);
+}
+
+.control-section:hover {
+    border-color: var(--border-light);
+    box-shadow: var(--shadow-md);
+}
+
+.control-section h3 {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* Header elegante */
 .header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    padding: 25px;
+    background: var(--gradient-primary);
+    padding: var(--spacing-xl);
     text-align: center;
     position: relative;
     overflow: hidden;
+    border-radius: 20px 20px 0 0;
 }
 
 .header::before {
@@ -114,266 +424,769 @@ body {
 .header .subtitle {
     font-size: 1.1rem;
     color: rgba(255, 255, 255, 0.9);
-    margin-top: 8px;
+    margin-top: var(--spacing-sm);
     position: relative;
     z-index: 1;
 }
 
-/* Botones principales mejorados */
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    border: none;
-    border-radius: 12px;
-    padding: 15px 30px;
-    color: white;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+/* ===== CHECKBOXES MODERNOS ===== */
+.advanced_check_row {
+    width: 100% !important;
+    background: var(--surface-light);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    margin: var(--spacing-md) 0;
+}
+
+.min_check {
+    min-width: min(1px, 100%) !important;
+}
+
+/* Checkboxes personalizados */
+input[type="checkbox"] {
+    appearance: none;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    width: 20px;
+    height: 20px;
     position: relative;
-    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-normal);
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+input[type="checkbox"]:checked {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
-.btn-primary:active {
-    transform: translateY(0);
+input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
 }
 
-.btn-primary::before {
+input[type="checkbox"]:hover {
+    border-color: var(--primary-color);
+}
+
+/* ===== RADIO BUTTONS Y SELECCIONES ===== */
+
+/* Radio buttons personalizados */
+input[type="radio"] {
+    appearance: none;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-full);
+    width: 20px;
+    height: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+input[type="radio"]:checked {
+    border-color: var(--primary-color);
+}
+
+input[type="radio"]:checked::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--primary-color);
 }
 
-.btn-primary:hover::before {
-    left: 100%;
+/* Sección de rendimiento */
+.performance_selection {
+    background: var(--surface-light);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
 }
 
-/* Botón de descarga por lote */
-.btn-download {
-    background: linear-gradient(135deg, var(--success-color), #22c55e);
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    color: white;
-    font-weight: 600;
+.performance_selection label {
+    width: 160px !important;
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: var(--spacing-xs);
+    border: 1px solid var(--border);
+    transition: all var(--transition-normal);
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
     display: flex;
     align-items: center;
-    gap: 8px;
 }
 
-.btn-download:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(74, 222, 128, 0.6);
-}
-
-/* Botones secundarios */
-.btn-secondary {
-    background: var(--surface-light);
-    border: 2px solid var(--border-light);
-    border-radius: 10px;
-    padding: 10px 20px;
-    color: var(--text-primary);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
+.performance_selection label:hover {
     border-color: var(--primary-color);
     background: rgba(102, 126, 234, 0.1);
 }
 
-/* Controles organizados */
-.control-section {
+/* Proporciones de aspecto */
+.aspect_ratios {
     background: var(--surface-light);
-    border-radius: 15px;
-    padding: 20px;
-    margin: 15px 0;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border);
-    transition: all 0.3s ease;
 }
 
-.control-section:hover {
-    border-color: var(--border-light);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+.aspect_ratios label {
+    flex: calc(50% - 5px) !important;
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: var(--spacing-xs);
+    border: 1px solid var(--border);
+    transition: all var(--transition-normal);
+    cursor: pointer;
 }
 
-.control-section h3 {
-    color: var(--primary-color);
-    font-weight: 700;
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.aspect_ratios label:hover {
+    border-color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.1);
 }
 
-/* Pestañas mejoradas */
+.aspect_ratios label span {
+    white-space: nowrap !important;
+    color: var(--text-primary);
+}
+
+.aspect_ratios label input {
+    margin-left: -5px !important;
+}
+
+/* ===== INPUTS Y FORMS MEJORADOS ===== */
+
+/* Inputs generales */
+.form-input,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"] {
+    background: var(--surface) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--spacing-md) !important;
+    color: var(--text-primary) !important;
+    font-size: 1rem !important;
+    transition: all var(--transition-normal) !important;
+    width: 100% !important;
+}
+
+.form-input:focus,
+input:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+}
+
+/* Textareas */
+.form-textarea,
+textarea {
+    background: var(--surface) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--spacing-md) !important;
+    color: var(--text-primary) !important;
+    font-size: 1rem !important;
+    min-height: 100px !important;
+    resize: vertical !important;
+    transition: all var(--transition-normal) !important;
+    font-family: inherit !important;
+}
+
+.form-textarea:focus,
+textarea:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+}
+
+/* Selects y dropdowns */
+select,
+.dropdown {
+    background: var(--surface) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--spacing-md) !important;
+    color: var(--text-primary) !important;
+    font-size: 1rem !important;
+    transition: all var(--transition-normal) !important;
+    cursor: pointer;
+}
+
+select:focus,
+.dropdown:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+}
+
+/* ===== SLIDERS MODERNOS ===== */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+}
+
+input[type="range"]::-webkit-slider-track {
+    background: var(--surface);
+    height: 8px;
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--border);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: var(--radius-full);
+    background: var(--gradient-primary);
+    border: 2px solid white;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+input[type="range"]::-moz-range-track {
+    background: var(--surface);
+    height: 8px;
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--border);
+}
+
+input[type="range"]::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: var(--radius-full);
+    background: var(--gradient-primary);
+    border: 2px solid white;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+}
+
+/* ===== PESTAÑAS MEJORADAS ===== */
 .tab-nav {
     background: var(--surface);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 4px;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-lg);
     border: 1px solid var(--border);
 }
 
 .tab-button {
-    background: transparent;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    color: var(--text-secondary);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    background: transparent !important;
+    border: none !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all var(--transition-normal) !important;
     position: relative;
 }
 
 .tab-button.active {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    color: white;
-    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    background: var(--gradient-primary) !important;
+    color: white !important;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3) !important;
 }
 
 .tab-button:hover:not(.active) {
-    background: rgba(102, 126, 234, 0.1);
-    color: var(--text-primary);
+    background: rgba(102, 126, 234, 0.1) !important;
+    color: var(--text-primary) !important;
 }
 
-/* Inputs mejorados */
-.form-input {
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    color: var(--text-primary);
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    width: 100%;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-textarea {
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    color: var(--text-primary);
-    font-size: 1rem;
-    min-height: 100px;
-    resize: vertical;
-    transition: all 0.3s ease;
-}
-
-.form-textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-/* Galería mejorada */
+/* ===== GALERÍA MEJORADA ===== */
 .gallery-container {
     background: var(--surface-light);
-    border-radius: 15px;
-    padding: 20px;
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
     border: 1px solid var(--border);
 }
 
 .gallery-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
 }
 
 .gallery-item {
     background: var(--surface);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--border);
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     position: relative;
 }
 
 .gallery-item:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-lg);
     border-color: var(--primary-color);
 }
 
-/* Barra de progreso mejorada */
-.progress-container {
-    background: var(--surface-light);
-    border-radius: 12px;
-    padding: 20px;
-    margin: 15px 0;
+.resizable_area {
+    resize: vertical;
+    overflow: auto !important;
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border);
 }
 
-.progress-bar {
+/* ===== LORA CONTROLS ===== */
+.lora_enable {
     background: var(--surface);
-    border-radius: 8px;
-    height: 8px;
-    overflow: hidden;
-    position: relative;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
 }
 
-.progress-fill {
-    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+.lora_enable label {
     height: 100%;
-    border-radius: 8px;
-    transition: width 0.3s ease;
-    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
 }
 
-.progress-fill::after {
-    content: '';
+.lora_enable label input {
+    margin: auto;
+}
+
+.lora_enable label span {
+    display: none;
+}
+
+@-moz-document url-prefix() {
+    .lora_weight input[type=number] {
+        width: 80px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        padding: var(--spacing-sm);
+    }
+}
+
+/* ===== MENÚ CONTEXTUAL ===== */
+#context-menu {
+    z-index: 9999;
     position: absolute;
-    top: 0;
+    display: block;
+    padding: 0px 0;
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 220px;
+    background: var(--surface);
+    backdrop-filter: blur(10px);
+}
+
+.context-menu-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.context-menu-items a {
+    display: block;
+    padding: var(--spacing-md);
+    cursor: pointer;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    border-radius: var(--radius-md);
+    margin: var(--spacing-xs);
+}
+
+.context-menu-items a:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* ===== TOOLTIPS Y CANVAS ===== */
+.canvas-tooltip-info {
+    position: absolute;
+    top: 28px;
+    left: 2px;
+    cursor: help;
+    background: var(--surface-light);
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 100;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+.canvas-tooltip-info::after {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 8px;
+    background-color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.canvas-tooltip-info::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 2px;
+    background-color: var(--text-primary);
+}
+
+.canvas-tooltip-content {
+    display: none;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: var(--spacing-md);
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    width: 280px;
+    font-size: 14px;
+    opacity: 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+}
+
+.canvas-tooltip:hover .canvas-tooltip-content {
+    display: block;
+    animation: fadeIn 0.5s;
+    opacity: 1;
+}
+
+/* Tooltips mejorados */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-light);
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+}
+
+.tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* ===== MODAL LIGHTBOX MEJORADO ===== */
+#lightboxModal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: shimmer 1.5s infinite;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: rgba(15, 15, 35, 0.95);
+    backdrop-filter: blur(10px);
+    user-select: none;
+    -webkit-user-select: none;
+    flex-direction: column;
 }
 
-@keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+.modalControls {
+    display: flex;
+    position: absolute;
+    right: 0px;
+    left: 0px;
+    gap: 1.5em;
+    padding: 1.5em;
+    background: rgba(0, 0, 0, 0);
+    z-index: 1;
+    transition: var(--transition-normal) background-color;
 }
 
-/* Iconos y elementos visuales */
-.icon {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
+.modalControls:hover {
+    background: rgba(0, 0, 0, 0.8);
 }
 
+.modalClose {
+    margin-left: auto;
+}
+
+.modalControls span {
+    color: white;
+    text-shadow: 0px 0px 8px black;
+    font-size: 36px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 1em;
+    transition: all var(--transition-normal);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+}
+
+.modalControls span:hover,
+.modalControls span:focus {
+    color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.1);
+    text-decoration: none;
+}
+
+#lightboxModal > img {
+    display: block;
+    margin: auto;
+    width: auto;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+#lightboxModal > img.modalImageFullscreen {
+    object-fit: contain;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    border-radius: 0;
+}
+
+.modalPrev,
+.modalNext {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    width: auto;
+    padding: var(--spacing-lg);
+    margin-top: -60px;
+    color: white;
+    font-weight: bold;
+    font-size: 24px;
+    transition: var(--transition-normal);
+    border-radius: var(--radius-lg);
+    user-select: none;
+    -webkit-user-select: none;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.modalNext {
+    right: var(--spacing-lg);
+}
+
+.modalPrev {
+    left: var(--spacing-lg);
+}
+
+.modalPrev:hover,
+.modalNext:hover {
+    background: var(--primary-color);
+    transform: scale(1.1);
+}
+
+/* ===== PREVIEW OVERLAYS ===== */
+#imageARPreview {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    border: 2px solid var(--primary-color);
+    background: rgba(102, 126, 234, 0.2);
+    z-index: 900;
+    pointer-events: none;
+    display: none;
+    border-radius: var(--radius-xs);
+}
+
+#stylePreviewOverlay {
+    opacity: 0;
+    pointer-events: none;
+    width: 140px;
+    height: 140px;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    border: 2px solid var(--primary-color);
+    transform: translate(-150px, 20px);
+    background-size: cover;
+    background-position: center;
+    background-color: var(--surface);
+    border-radius: var(--radius-lg);
+    z-index: 100;
+    transition: transform 0.2s ease, opacity var(--transition-normal);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(10px);
+}
+
+#stylePreviewOverlay.lower-half {
+    transform: translate(-150px, -150px);
+}
+
+/* ===== STYLE SELECTIONS ===== */
+.styler {
+    overflow: inherit !important;
+}
+
+.gradio-container {
+    overflow: visible;
+    background: var(--background);
+    min-height: 100vh;
+}
+
+.contain .tabs {
+    height: 100%;
+    background: var(--surface-light);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+}
+
+.contain .tabs .tabitem.style_selections_tab {
+    height: 100%;
+    background: var(--surface-light);
+}
+
+.contain .tabs .tabitem.style_selections_tab > div:first-child {
+    height: 100%;
+}
+
+.contain .tabs .tabitem.style_selections_tab .style_selections {
+    min-height: 220px;
+    height: 100%;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    padding: var(--spacing-sm);
+}
+
+.contain .tabs .tabitem.style_selections_tab .style_selections .wrap[data-testid="checkbox-group"] {
+    position: absolute;
+    overflow: auto;
+    padding-right: var(--spacing-sm);
+    max-height: 100%;
+}
+
+.contain .tabs .tabitem.style_selections_tab .style_selections .wrap[data-testid="checkbox-group"] label {
+    flex: calc(50% - 8px) !important;
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: var(--spacing-xs);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+.contain .tabs .tabitem.style_selections_tab .style_selections .wrap[data-testid="checkbox-group"] label:hover {
+    border-color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.contain .tabs .tabitem.style_selections_tab .style_selections .wrap[data-testid="checkbox-group"] label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.preview-tooltip {
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    border-radius: var(--radius-md) var(--radius-md) 0px 0px;
+    border: 1px solid var(--border);
+    padding: var(--spacing-sm);
+    display: none;
+}
+
+/* ===== INPAINT ESPECÍFICOS ===== */
+#inpaint_canvas .canvas-tooltip-info {
+    top: 6px;
+}
+
+#inpaint_brush_color input[type=color] {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+#inpaint_brush_color input[type=color]:hover {
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+/* ===== ACCORDIONS MEJORADOS ===== */
+.accordion {
+    background: var(--surface-light);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    margin: var(--spacing-sm) 0;
+    overflow: hidden;
+}
+
+.accordion-header {
+    background: var(--surface);
+    padding: var(--spacing-md) var(--spacing-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    border-bottom: 1px solid var(--border);
+}
+
+.accordion-header:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.accordion-content {
+    padding: var(--spacing-lg);
+    background: var(--surface-light);
+}
+
+/* ===== INDICADORES DE ESTADO ===== */
 .status-indicator {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     display: inline-block;
-    margin-right: 8px;
+    margin-right: var(--spacing-sm);
 }
 
 .status-generating {
@@ -394,44 +1207,98 @@ body {
     50% { opacity: 0.5; }
 }
 
-/* Responsive design */
+/* ===== ANIMACIONES GENERALES ===== */
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes fadeInUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+.fade-in {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 1024px) {
     .main-container {
-        margin: 10px;
+        margin: var(--spacing-sm);
     }
     
     .header h1 {
         font-size: 2rem;
     }
+    
+    .control-section {
+        padding: var(--spacing-md);
+    }
 }
 
 @media (max-width: 768px) {
     .control-section {
-        padding: 15px;
+        padding: var(--spacing-md);
+        margin: var(--spacing-sm) 0;
     }
     
-    .btn-primary {
-        padding: 12px 24px;
-        font-size: 0.9rem;
+    .btn-primary,
+    .type_row {
+        padding: var(--spacing-md) var(--spacing-lg) !important;
+        font-size: 0.9rem !important;
     }
     
     .gallery-grid {
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 15px;
+        gap: var(--spacing-md);
+    }
+    
+    .header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .aspect_ratios label,
+    .performance_selection label {
+        width: 100% !important;
+        flex: 100% !important;
     }
 }
 
-/* Animaciones adicionales */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+@media (max-width: 480px) {
+    .main-container {
+        margin: var(--spacing-xs);
+        border-radius: var(--radius-md);
+    }
+    
+    .header {
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+    
+    .control-section {
+        padding: var(--spacing-sm);
+    }
+    
+    .gallery-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
 }
 
-.fade-in {
-    animation: fadeIn 0.5s ease-out;
-}
-
-/* Mejoras de accesibilidad */
+/* ===== MEJORAS DE ACCESIBILIDAD ===== */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -444,560 +1311,381 @@ body {
     border: 0;
 }
 
-/* Tooltips mejorados */
-.tooltip {
+/* Focus visible para mejor accesibilidad */
+*:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Reducir movimiento para usuarios que lo prefieren */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== ESTILOS ESPECÍFICOS DE GRADIO 3.X ===== */
+/* Compatibilidad con versiones antiguas de Gradio */
+
+/* Forzar tema oscuro en elementos de Gradio 3.x */
+.gradio-container,
+.gradio-container *,
+.gr-interface,
+.gr-interface * {
+    color: var(--text-primary) !important;
+}
+
+.gradio-container .gr-form,
+.gradio-container .gr-box,
+.gradio-container .gr-panel {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+/* Inputs de Gradio 3.x */
+.gradio-container input,
+.gradio-container textarea,
+.gradio-container select,
+.gr-textbox,
+.gr-number,
+.gr-dropdown {
+    background: var(--surface) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--text-primary) !important;
+    padding: var(--spacing-md) !important;
+    transition: all var(--transition-normal) !important;
+}
+
+.gradio-container input:focus,
+.gradio-container textarea:focus,
+.gradio-container select:focus,
+.gr-textbox:focus,
+.gr-number:focus,
+.gr-dropdown:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    outline: none !important;
+}
+
+/* Botones de Gradio 3.x */
+.gradio-container button,
+.gr-button {
+    transition: all var(--transition-normal) !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 500 !important;
+}
+
+.gradio-container button:not(.btn-primary):not(.btn-secondary):not(.btn-download),
+.gr-button:not(.btn-primary):not(.btn-secondary):not(.btn-download) {
+    background: var(--surface-light) !important;
+    border: 2px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+.gradio-container button:not(.btn-primary):not(.btn-secondary):not(.btn-download):hover,
+.gr-button:not(.btn-primary):not(.btn-secondary):not(.btn-download):hover {
+    background: var(--surface) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-1px);
+}
+
+/* Componente File específico para descargas en Gradio 3.x */
+.gradio-container .gr-file,
+.gr-file {
+    background: var(--surface-light) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--spacing-md) !important;
+}
+
+.gradio-container .gr-file a,
+.gr-file a {
+    color: var(--primary-color) !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--spacing-sm) !important;
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+    background: var(--primary-color) !important;
+    color: white !important;
+    border-radius: var(--radius-md) !important;
+    transition: all var(--transition-normal) !important;
+}
+
+.gradio-container .gr-file a:hover,
+.gr-file a:hover {
+    background: var(--primary-dark) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Botones específicos que contienen texto de descarga (Gradio 3.x) */
+button[value*="Descargar"],
+button[value*="📦"],
+.gr-button[value*="Descargar"],
+.gr-button[value*="📦"] {
+    background: var(--gradient-success) !important;
+    border: none !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all var(--transition-normal) !important;
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4) !important;
+    min-height: 48px;
+}
+
+button[value*="Descargar"]:hover,
+button[value*="📦"]:hover,
+.gr-button[value*="Descargar"]:hover,
+.gr-button[value*="📦"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(74, 222, 128, 0.6) !important;
+}
+
+/* Labels mejorados para Gradio 3.x */
+.gradio-container label,
+.gr-label {
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+    margin-bottom: var(--spacing-sm) !important;
+}
+
+/* Tabs específicos de Gradio 3.x */
+.gradio-container .gr-tabs,
+.gr-tabs {
+    background: var(--surface) !important;
+    border-radius: var(--radius-lg) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.gradio-container .gr-tab,
+.gr-tab {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all var(--transition-normal) !important;
+}
+
+.gradio-container .gr-tab.selected,
+.gr-tab.selected {
+    background: var(--gradient-primary) !important;
+    color: white !important;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3) !important;
+}
+
+.gradio-container .gr-tab:hover:not(.selected),
+.gr-tab:hover:not(.selected) {
+    background: rgba(102, 126, 234, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Sliders específicos de Gradio 3.x */
+.gradio-container .gr-slider,
+.gr-slider {
+    background: var(--surface) !important;
+}
+
+.gradio-container .gr-slider input[type="range"],
+.gr-slider input[type="range"] {
+    background: transparent !important;
+}
+
+/* Checkboxes específicos de Gradio 3.x */
+.gradio-container .gr-checkbox,
+.gr-checkbox {
+    background: var(--surface) !important;
+}
+
+.gradio-container .gr-checkbox input[type="checkbox"],
+.gr-checkbox input[type="checkbox"] {
+    appearance: none;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    width: 20px;
+    height: 20px;
     position: relative;
-    display: inline-block;
+    cursor: pointer;
+    transition: all var(--transition-normal);
 }
 
-.tooltip::after {
-    content: attr(data-tooltip);
+.gradio-container .gr-checkbox input[type="checkbox"]:checked,
+.gr-checkbox input[type="checkbox"]:checked {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.gradio-container .gr-checkbox input[type="checkbox"]:checked::after,
+.gr-checkbox input[type="checkbox"]:checked::after {
+    content: '✓';
     position: absolute;
-    bottom: 100%;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface-light);
-    color: var(--text-primary);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
 }
 
-.tooltip:hover::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(-4px);
+/* Radio buttons específicos de Gradio 3.x */
+.gradio-container .gr-radio,
+.gr-radio {
+    background: var(--surface) !important;
 }
-"""
 
-def create_batch_download_button():
-    """Crear botón de descarga por lote con funcionalidad"""
-    
-    def download_all_images():
-        """Función para descargar todas las imágenes generadas"""
-        try:
-            # Crear un archivo temporal ZIP
-            temp_dir = tempfile.mkdtemp()
-            zip_path = os.path.join(temp_dir, f"fooocus_imagenes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip")
-            
-            with zipfile.ZipFile(zip_path, 'w') as zipf:
-                # Buscar todas las imágenes en el directorio de salida
-                output_dir = modules.config.path_outputs
-                if os.path.exists(output_dir):
-                    for root, dirs, files in os.walk(output_dir):
-                        for file in files:
-                            if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
-                                file_path = os.path.join(root, file)
-                                arcname = os.path.relpath(file_path, output_dir)
-                                zipf.write(file_path, arcname)
-                
-            return zip_path
-        except Exception as e:
-            print(f"Error creando archivo ZIP: {e}")
-            return None
+.gradio-container .gr-radio input[type="radio"],
+.gr-radio input[type="radio"] {
+    appearance: none;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-full);
+    width: 20px;
+    height: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
 
-    return gr.DownloadButton(
-        label="📦 Descargar Todas las Imágenes",
-        value=download_all_images,
-        elem_classes=["btn-download"],
-        variant="secondary"
-    )
+.gradio-container .gr-radio input[type="radio"]:checked,
+.gr-radio input[type="radio"]:checked {
+    border-color: var(--primary-color);
+}
 
-def get_task(*args):
-    args = list(args)
-    args.pop(0)
-    return worker.AsyncTask(args=args)
+.gradio-container .gr-radio input[type="radio"]:checked::after,
+.gr-radio input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--primary-color);
+}
 
-def generate_clicked(task: worker.AsyncTask):
-    import ldm_patched.modules.model_management as model_management
+/* Gallery específico de Gradio 3.x */
+.gradio-container .gr-gallery,
+.gr-gallery {
+    background: var(--surface-light) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--spacing-md) !important;
+}
 
-    with model_management.interrupt_processing_mutex:
-        model_management.interrupt_processing = False
+/* Progress específico de Gradio 3.x */
+.gradio-container .gr-progress,
+.gr-progress {
+    background: var(--surface) !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border) !important;
+    overflow: hidden;
+}
 
-    if len(task.args) == 0:
-        return
+/* Textbox readonly específico para estados */
+.gradio-container .gr-textbox[readonly],
+.gr-textbox[readonly] {
+    background: var(--surface-light) !important;
+    border-color: var(--border-light) !important;
+    color: var(--text-secondary) !important;
+    font-style: italic !important;
+    cursor: default !important;
+}
 
-    execution_start_time = time.perf_counter()
-    finished = False
+.gradio-container .gr-textbox[readonly]:focus,
+.gr-textbox[readonly]:focus {
+    border-color: var(--border-light) !important;
+    box-shadow: none !important;
+}
 
-    yield gr.update(visible=True, value=modules.html.make_progress_html(1, 'Esperando inicio de tarea...')), \
-        gr.update(visible=True, value=None), \
-        gr.update(visible=False, value=None), \
-        gr.update(visible=False)
+/* Accordion específico de Gradio 3.x */
+.gradio-container .gr-accordion,
+.gr-accordion {
+    background: var(--surface-light) !important;
+    border-radius: var(--radius-lg) !important;
+    border: 1px solid var(--border) !important;
+    margin: var(--spacing-sm) 0 !important;
+    overflow: hidden !important;
+}
 
-    worker.async_tasks.append(task)
+.gradio-container .gr-accordion .gr-accordion-header,
+.gr-accordion .gr-accordion-header {
+    background: var(--surface) !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    cursor: pointer !important;
+    transition: all var(--transition-normal) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
 
-    while not finished:
-        time.sleep(0.01)
-        if len(task.yields) > 0:
-            flag, product = task.yields.pop(0)
-            if flag == 'preview':
-                if len(task.yields) > 0:
-                    if task.yields[0][0] == 'preview':
-                        continue
+.gradio-container .gr-accordion .gr-accordion-header:hover,
+.gr-accordion .gr-accordion-header:hover {
+    background: rgba(102, 126, 234, 0.1) !important;
+}
 
-                percentage, title, image = product
-                yield gr.update(visible=True, value=modules.html.make_progress_html(percentage, title)), \
-                    gr.update(visible=True, value=image) if image is not None else gr.update(), \
-                    gr.update(), \
-                    gr.update(visible=False)
-            if flag == 'results':
-                yield gr.update(visible=True), \
-                    gr.update(visible=True), \
-                    gr.update(visible=True, value=product), \
-                    gr.update(visible=False)
-            if flag == 'finish':
-                if not args_manager.args.disable_enhance_output_sorting:
-                    product = sort_enhance_images(product, task)
+/* Estilos específicos para elementos con emojis en Gradio 3.x */
+.gradio-container *:contains("✅"),
+.gradio-container *:contains("❌"),
+.gradio-container *:contains("⚠️"),
+.gradio-container *:contains("📦") {
+    line-height: 1.5 !important;
+}
 
-                yield gr.update(visible=False), \
-                    gr.update(visible=False), \
-                    gr.update(visible=False), \
-                    gr.update(visible=True, value=product)
-                finished = True
+/* Fix para fuentes en Gradio 3.x */
+.gr-interface,
+.gr-interface * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
 
-                if args_manager.args.disable_image_log:
-                    for filepath in product:
-                        if isinstance(filepath, str) and os.path.exists(filepath):
-                            os.remove(filepath)
+/* Asegurar que el fondo principal sea oscuro */
+.gr-interface {
+    background: var(--background) !important;
+    min-height: 100vh !important;
+}
 
-    execution_time = time.perf_counter() - execution_start_time
-    print(f'Tiempo total: {execution_time:.2f} segundos')
-    return
+/* ===== UTILIDADES ===== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
 
-def sort_enhance_images(images, task):
-    if not task.should_enhance or len(images) <= task.images_to_enhance_count:
-        return images
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
 
-    sorted_images = []
-    walk_index = task.images_to_enhance_count
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
 
-    for index, enhanced_img in enumerate(images[:task.images_to_enhance_count]):
-        sorted_images.append(enhanced_img)
-        if index not in task.enhance_stats:
-            continue
-        target_index = walk_index + task.enhance_stats[index]
-        if walk_index < len(images) and target_index <= len(images):
-            sorted_images += images[walk_index:target_index]
-        walk_index += task.enhance_stats[index]
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
 
-    return sorted_images
+.border-radius-sm { border-radius: var(--radius-sm); }
+.border-radius-md { border-radius: var(--radius-md); }
+.border-radius-lg { border-radius: var(--radius-lg); }
 
-def inpaint_mode_change(mode, inpaint_engine_version):
-    assert mode in modules.flags.inpaint_options
-
-    if mode == modules.flags.inpaint_option_detail:
-        return [
-            gr.update(visible=True), gr.update(visible=False, value=[]),
-            gr.Dataset.update(visible=True, samples=modules.config.example_inpaint_prompts),
-            False, 'None', 0.5, 0.0
-        ]
-
-    if inpaint_engine_version == 'empty':
-        inpaint_engine_version = modules.config.default_inpaint_engine_version
-
-    if mode == modules.flags.inpaint_option_modify:
-        return [
-            gr.update(visible=True), gr.update(visible=False, value=[]),
-            gr.Dataset.update(visible=False, samples=modules.config.example_inpaint_prompts),
-            True, inpaint_engine_version, 1.0, 0.0
-        ]
-
-    return [
-        gr.update(visible=False, value=''), gr.update(visible=True),
-        gr.Dataset.update(visible=False, samples=modules.config.example_inpaint_prompts),
-        False, inpaint_engine_version, 1.0, 0.618
-    ]
-
-reload_javascript()
-
-title = f'Fooocus {fooocus_version.version}'
-
-if isinstance(args_manager.args.preset, str):
-    title += ' ' + args_manager.args.preset
-
-# Crear la interfaz principal con CSS personalizado
-shared.gradio_root = gr.Blocks(
-    title=title,
-    css=custom_css,
-    theme=gr.themes.Base(
-        primary_hue="blue",
-        secondary_hue="purple",
-        neutral_hue="slate",
-        font=gr.themes.GoogleFont("Inter")
-    )
-).queue()
-
-with shared.gradio_root:
-    currentTask = gr.State(worker.AsyncTask(args=[]))
-    inpaint_engine_state = gr.State('empty')
-    
-    # Header mejorado
-    with gr.Row(elem_classes=['header']):
-        gr.HTML(f"""
-            <div class="header">
-                <h1>🎨 Fooocus IA - Generador de Imágenes</h1>
-                <p class="subtitle">Versión {fooocus_version.version} - Interfaz Mejorada en Español</p>
-            </div>
-        """)
-    
-    # Contenedor principal
-    with gr.Row(elem_classes=['main-container']):
-        # Panel izquierdo - Generación y galería
-        with gr.Column(scale=3, elem_classes=['control-section']):
-            # Sección de vista previa y galería
-            with gr.Row():
-                progress_window = grh.Image(
-                    label='🖼️ Vista Previa', 
-                    show_label=True, 
-                    visible=False, 
-                    height=768,
-                    elem_classes=['gallery-item']
-                )
-                progress_gallery = gr.Gallery(
-                    label='✨ Imágenes Terminadas', 
-                    show_label=True, 
-                    object_fit='contain',
-                    height=768, 
-                    visible=False, 
-                    elem_classes=['gallery-container']
-                )
-            
-            # Barra de progreso mejorada
-            progress_html = gr.HTML(
-                value=modules.html.make_progress_html(32, 'Progreso 32%'), 
-                visible=False,
-                elem_id='progress-bar', 
-                elem_classes=['progress-container']
-            )
-            
-            # Galería principal
-            gallery = gr.Gallery(
-                label='🎯 Galería Principal', 
-                show_label=False, 
-                object_fit='contain', 
-                visible=True, 
-                height=768,
-                elem_classes=['gallery-container', 'fade-in'],
-                elem_id='final_gallery'
-            )
-            
-            # Controles de prompt mejorados
-            with gr.Row(elem_classes=['control-section']):
-                with gr.Column(scale=17):
-                    prompt = gr.Textbox(
-                        show_label=False, 
-                        placeholder="✍️ Escribe tu prompt aquí o pega parámetros...", 
-                        elem_id='positive_prompt',
-                        autofocus=True, 
-                        lines=3,
-                        elem_classes=['form-textarea']
-                    )
-                    
-                    default_prompt = modules.config.default_prompt
-                    if isinstance(default_prompt, str) and default_prompt != '':
-                        shared.gradio_root.load(lambda: default_prompt, outputs=prompt)
-
-                with gr.Column(scale=3, min_width=0):
-                    # Botones principales reorganizados
-                    generate_button = gr.Button(
-                        label="Generar", 
-                        value="🚀 Generar Imagen", 
-                        elem_classes=['btn-primary'], 
-                        elem_id='generate_button', 
-                        visible=True,
-                        variant="primary",
-                        size="lg"
-                    )
-                    
-                    # Botón de descarga por lote
-                    batch_download_btn = create_batch_download_button()
-                    
-                    reset_button = gr.Button(
-                        label="Reconectar", 
-                        value="🔄 Reconectar", 
-                        elem_classes=['btn-secondary'], 
-                        elem_id='reset_button', 
-                        visible=False
-                    )
-                    
-                    load_parameter_button = gr.Button(
-                        label="Cargar Parámetros", 
-                        value="⚙️ Cargar Parámetros", 
-                        elem_classes=['btn-secondary'], 
-                        elem_id='load_parameter_button', 
-                        visible=False
-                    )
-                    
-                    with gr.Row():
-                        skip_button = gr.Button(
-                            label="Saltar", 
-                            value="⏭️ Saltar", 
-                            elem_classes=['btn-secondary'], 
-                            elem_id='skip_button', 
-                            visible=False,
-                            size="sm"
-                        )
-                        stop_button = gr.Button(
-                            label="Detener", 
-                            value="⏹️ Detener", 
-                            elem_classes=['btn-secondary'], 
-                            elem_id='stop_button', 
-                            visible=False,
-                            size="sm"
-                        )
-
-                    def stop_clicked(currentTask):
-                        import ldm_patched.modules.model_management as model_management
-                        currentTask.last_stop = 'stop'
-                        if (currentTask.processing):
-                            model_management.interrupt_current_processing()
-                        return currentTask
-
-                    def skip_clicked(currentTask):
-                        import ldm_patched.modules.model_management as model_management
-                        currentTask.last_stop = 'skip'
-                        if (currentTask.processing):
-                            model_management.interrupt_current_processing()
-                        return currentTask
-
-                    stop_button.click(stop_clicked, inputs=currentTask, outputs=currentTask, queue=False, show_progress=False, _js='cancelGenerateForever')
-                    skip_button.click(skip_clicked, inputs=currentTask, outputs=currentTask, queue=False, show_progress=False)
-            
-            # Checkboxes mejorados
-            with gr.Row(elem_classes=['control-section']):
-                gr.HTML("<h3>🎛️ Opciones de Generación</h3>")
-                with gr.Row():
-                    input_image_checkbox = gr.Checkbox(
-                        label='🖼️ Imagen de Entrada', 
-                        value=modules.config.default_image_prompt_checkbox, 
-                        container=False, 
-                        elem_classes=['min_check']
-                    )
-                    enhance_checkbox = gr.Checkbox(
-                        label='✨ Mejorar', 
-                        value=modules.config.default_enhance_checkbox, 
-                        container=False, 
-                        elem_classes=['min_check']
-                    )
-                    advanced_checkbox = gr.Checkbox(
-                        label='🔧 Avanzado', 
-                        value=modules.config.default_advanced_checkbox, 
-                        container=False, 
-                        elem_classes=['min_check']
-                    )
-            
-            # Panel de imagen de entrada mejorado
-            with gr.Row(visible=modules.config.default_image_prompt_checkbox, elem_classes=['control-section']) as image_input_panel:
-                with gr.Tabs(selected=modules.config.default_selected_image_input_tab_id, elem_classes=['tab-nav']):
-                    with gr.Tab(label='📈 Ampliación o Variación', id='uov_tab', elem_classes=['tab-button']) as uov_tab:
-                        with gr.Row():
-                            with gr.Column():
-                                uov_input_image = grh.Image(
-                                    label='Imagen', 
-                                    source='upload', 
-                                    type='numpy', 
-                                    show_label=False,
-                                    elem_classes=['gallery-item']
-                                )
-                            with gr.Column():
-                                uov_method = gr.Radio(
-                                    label='🎯 Ampliación o Variación:', 
-                                    choices=flags.uov_list, 
-                                    value=modules.config.default_uov_method
-                                )
-                                gr.HTML('<a href="https://github.com/lllyasviel/Fooocus/discussions/390" target="_blank">📚 Documentación</a>')
-                    
-                    # Continuar con las demás pestañas con traducciones y mejoras similares...
-                    # [El resto del código sigue el mismo patrón de mejoras]
-
-        # Panel derecho - Controles avanzados
-        with gr.Column(scale=1, visible=modules.config.default_advanced_checkbox, elem_classes=['control-section']) as advanced_column:
-            with gr.Tab(label='⚙️ Configuración', elem_classes=['tab-button']):
-                gr.HTML("<h3>🎛️ Configuración Principal</h3>")
-                
-                if not args_manager.args.disable_preset_selection:
-                    preset_selection = gr.Dropdown(
-                        label='🎨 Preset',
-                        choices=modules.config.available_presets,
-                        value=args_manager.args.preset if args_manager.args.preset else "initial",
-                        interactive=True,
-                        elem_classes=['form-input']
-                    )
-
-                performance_selection = gr.Radio(
-                    label='⚡ Rendimiento',
-                    choices=flags.Performance.values(),
-                    value=modules.config.default_performance,
-                    elem_classes=['performance_selection']
-                )
-
-                with gr.Accordion(label='📐 Proporciones de Aspecto', open=False, elem_id='aspect_ratios_accordion') as aspect_ratios_accordion:
-                    aspect_ratios_selection = gr.Radio(
-                        label='Proporciones de Aspecto', 
-                        show_label=False,
-                        choices=modules.config.available_aspect_ratios_labels,
-                        value=modules.config.default_aspect_ratio,
-                        info='ancho × alto',
-                        elem_classes='aspect_ratios'
-                    )
-
-                image_number = gr.Slider(
-                    label='📊 Número de Imágenes', 
-                    minimum=1, 
-                    maximum=modules.config.default_max_image_number, 
-                    step=1, 
-                    value=modules.config.default_image_number
-                )
-
-                output_format = gr.Radio(
-                    label='💾 Formato de Salida',
-                    choices=flags.OutputFormat.list(),
-                    value=modules.config.default_output_format
-                )
-
-                negative_prompt = gr.Textbox(
-                    label='❌ Prompt Negativo', 
-                    show_label=True, 
-                    placeholder="Describe lo que NO quieres ver...",
-                    info='Describe lo que no quieres ver en la imagen.', 
-                    lines=2,
-                    elem_id='negative_prompt',
-                    value=modules.config.default_prompt_negative,
-                    elem_classes=['form-textarea']
-                )
-                
-                # Controles de semilla mejorados
-                with gr.Row():
-                    seed_random = gr.Checkbox(label='🎲 Aleatorio', value=True)
-                    image_seed = gr.Textbox(
-                        label='🌱 Semilla', 
-                        value=0, 
-                        max_lines=1, 
-                        visible=False,
-                        elem_classes=['form-input']
-                    )
-
-                def random_checked(r):
-                    return gr.update(visible=not r)
-
-                def refresh_seed(r, seed_string):
-                    if r:
-                        return random.randint(constants.MIN_SEED, constants.MAX_SEED)
-                    else:
-                        try:
-                            seed_value = int(seed_string)
-                            if constants.MIN_SEED <= seed_value <= constants.MAX_SEED:
-                                return seed_value
-                        except ValueError:
-                            pass
-                        return random.randint(constants.MIN_SEED, constants.MAX_SEED)
-
-                seed_random.change(random_checked, inputs=[seed_random], outputs=[image_seed],
-                                   queue=False, show_progress=False)
-
-                def update_history_link():
-                    if args_manager.args.disable_image_log:
-                        return gr.update(value='')
-                    return gr.update(value=f'<a href="file={get_current_html_path(output_format)}" target="_blank" class="btn-secondary">📚 Historial de Imágenes</a>')
-
-                history_link = gr.HTML()
-                shared.gradio_root.load(update_history_link, outputs=history_link, queue=False, show_progress=False)
-
-    # JavaScript para efectos adicionales
-    gr.HTML("""
-    <script>
-    // Efectos de interfaz mejorados
-    document.addEventListener('DOMContentLoaded', function() {
-        // Agregar efectos de hover a elementos
-        const buttons = document.querySelectorAll('.btn-primary, .btn-secondary, .btn-download');
-        buttons.forEach(button => {
-            button.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-2px)';
-            });
-            button.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-        
-        // Animaciones de entrada
-        const sections = document.querySelectorAll('.control-section');
-        sections.forEach((section, index) => {
-            section.style.animationDelay = `${index * 0.1}s`;
-            section.classList.add('fade-in');
-        });
-        
-        // Notificación de completado
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-        
-        // Monitorear cambios en la galería
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList') {
-                    const gallery = document.querySelector('#final_gallery');
-                    if (gallery && gallery.children.length > 0) {
-                        showNotification('¡Imagen generada exitosamente! 🎉');
-                    }
-                }
-            });
-        });
-        
-        observer.observe(document.body, { childList: true, subtree: true });
-    });
-    </script>
-    
-    <style>
-    .notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 10px;
-        color: white;
-        font-weight: 600;
-        z-index: 10000;
-        animation: slideIn 0.3s ease-out;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+/* ===== PRINT STYLES ===== */
+@media print {
+    * {
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
     }
     
-    .notification-success {
-        background: linear-gradient(135deg, var(--success-color), #22c55e);
+    .btn-primary,
+    .btn-secondary,
+    .btn-download {
+        border: 1px solid black !important;
     }
-    
-    .notification-error {
-        background: linear-gradient(135deg, var(--error-color), #dc2626);
-    }
-    
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    </style>
-    """)
-
-# Configuración de eventos y lanzamiento
-shared.gradio_root.launch(
-    inbrowser=args_manager.args.in_browser,
-    server_name=args_manager.args.listen,
-    server_port=args_manager.args.port,
-    share=args_manager.args.share,
-    auth=check_auth if (args_manager.args.share or args_manager.args.listen) and auth_enabled else None,
-    allowed_paths=[modules.config.path_outputs],
-    blocked_paths=[constants.AUTH_FILENAME]
-)
+}
