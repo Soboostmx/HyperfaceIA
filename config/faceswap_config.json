@@ -1,0 +1,21 @@
+{
+    "enabled": true,
+    "models": {
+        "inswapper_path": "Fooocus\\models\\faceswap\\inswapper\\inswapper_128.onnx",
+        "face_detection_path": "Fooocus\\models\\faceswap\\face_detection\\1k3d68.onnx",
+        "face_recognition_path": "Fooocus\\models\\faceswap\\face_recognition",
+        "upscaler_path": "Fooocus\\models\\upscalers\\GFPGANv1.4.pth"
+    },
+    "settings": {
+        "face_detection_threshold": 0.5,
+        "face_swap_strength": 0.8,
+        "blend_ratio": 0.7,
+        "upscale_faces": true,
+        "restore_faces": true
+    },
+    "paths": {
+        "input_faces": "Fooocus\\inputs\\face_images",
+        "output": "Fooocus\\outputs\\faceswap",
+        "temp": "Fooocus\\temp\\faceswap"
+    }
+}
